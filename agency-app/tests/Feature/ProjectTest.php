@@ -4,6 +4,7 @@ use App\Models\Client;
 use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\ProjectSeeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -44,10 +45,13 @@ test('owners can manage projects and completion timestamps', function () {
 });
 
 test('foreign owners cannot access projects or assign foreign clients', function (string $method, string $action) {
-    $project = Project::factory()->create();
-    $user = User::factory()->create();
-    expect(Gate::forUser($user)->allows('view', $project))->toBeFalse();
-    $this->actingAs($user)->{$method}(route('projects.'.$action, $project), projectPayload($project->client))->assertNotFound();
+    $owner = User::factory()->create();
+    $intruder = User::factory()->create();
+    $client = Client::factory()->for($owner)->create();
+    $project = Project::factory()->for($client)->create();
+
+    expect(Gate::forUser($intruder)->allows('view', $project))->toBeFalse();
+    $this->actingAs($intruder)->{$method}(route('projects.'.$action, $project), projectPayload($project->client))->assertNotFound();
     $this->assertModelExists($project);
 })->with([['get', 'show'], ['get', 'edit'], ['put', 'update'], ['delete', 'destroy']]);
 
@@ -141,4 +145,31 @@ test('demo seeding creates fictional clients when none exist without changing ex
     expect($client->projects()->count())->toBe(0);
     $this->assertDatabaseCount('clients', 3);
     $this->assertDatabaseCount('projects', 6);
+});
+
+test('project index loads a full page within eight queries', function () {
+    $user = User::factory()->create();
+    $clients = Client::factory()->count(10)->for($user)->create();
+
+    foreach ($clients as $client) {
+        Project::factory()->for($client)->create();
+    }
+
+    $this->actingAs($user);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $response = $this->get(route('projects.index'));
+        $queryCount = count(DB::getQueryLog());
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('projects.data', 10)
+        ->has('projects.data.0.client'));
+
+    expect($queryCount)->toBeLessThanOrEqual(8);
 });
