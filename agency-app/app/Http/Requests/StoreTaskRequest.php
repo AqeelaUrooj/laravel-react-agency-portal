@@ -4,32 +4,31 @@ namespace App\Http\Requests;
 
 use App\Models\Project;
 use App\Models\Task;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
+use Illuminate\Validation\Rules\In;
 
 class StoreTaskRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        return Project::query()
-            ->accessibleTo($user)
-            ->whereKey($this->input('project_id'))
-            ->exists();
+        return $this->user() !== null;
     }
 
+    /** @return array<string, list<string|Exists|In>> */
     public function rules(): array
     {
         return [
             'project_id' => [
+                'bail',
                 'required',
                 'integer',
-                'exists:projects,id',
+                Rule::exists('projects', 'id')->where(fn (Builder $query) => $query->whereIn(
+                    'id',
+                    Project::query()->accessibleTo($this->user())->select('projects.id')->toBase(),
+                )),
             ],
 
             'title' => [

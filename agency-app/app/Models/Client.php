@@ -26,4 +26,12 @@ class Client extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /** @return array<string, int> */
+    public static function metrics(User $user): array
+    {
+        $counts = $user->clients()->selectRaw('status, count(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
+
+        return ['total' => (int) $counts->sum(), 'active' => (int) ($counts['active'] ?? 0), 'inactive' => (int) ($counts['inactive'] ?? 0), 'lead' => (int) ($counts['lead'] ?? 0)];
+    }
 }

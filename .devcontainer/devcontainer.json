@@ -1,0 +1,16 @@
+{
+  "name": "agency-portal",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/laravel-react-agency-portal",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "forwardPorts": [
+    8000,
+    5173
+  ],
+  "remoteUser": "vscode"
+}

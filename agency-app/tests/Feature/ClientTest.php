@@ -68,3 +68,19 @@ test('invalid updates preserve existing data', function () {
     $this->actingAs($client->user)->put(route('clients.update', $client), ['name' => '', 'email' => 'invalid', 'status' => 'unknown'])->assertSessionHasErrors(['name', 'email', 'status']);
     $this->assertDatabaseHas('clients', ['id' => $client->id, 'name' => $client->name, 'email' => $client->email, 'status' => $client->status]);
 });
+
+test('client phone search only returns clients owned by the signed-in user', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $phone = '+1 555 0100';
+
+    $ownedClient = Client::factory()->for($user)->create(['phone' => $phone]);
+    Client::factory()->for($otherUser)->create(['phone' => $phone]);
+
+    $this->actingAs($user)
+        ->get(route('clients.index', ['search' => $phone]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('clients.data', 1)
+            ->where('clients.data.0.id', $ownedClient->id));
+});
