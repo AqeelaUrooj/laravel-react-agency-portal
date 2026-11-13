@@ -133,8 +133,8 @@ test('project seeder is repeatable and only uses fictional example clients', fun
 
 test('project ordering supports names deadlines and creation dates', function (string $sort, string $direction, string $first) {
     $client = Client::factory()->create();
-    Project::factory()->for($client)->create(['name' => 'Alpha', 'due_date' => '2026-05-01', 'created_at' => '2026-01-01']);
-    Project::factory()->for($client)->create(['name' => 'Zulu', 'due_date' => '2026-03-01', 'created_at' => '2026-02-01']);
+    Project::factory()->for($client)->create(['name' => 'Alpha', 'start_date' => '2026-01-01', 'due_date' => '2026-05-01', 'created_at' => '2026-01-01']);
+    Project::factory()->for($client)->create(['name' => 'Zulu', 'start_date' => '2026-01-01', 'due_date' => '2026-03-01', 'created_at' => '2026-02-01']);
     $this->actingAs($client->user)->get(route('projects.index', compact('sort', 'direction')))->assertInertia(fn (Assert $page) => $page->where('projects.data.0.name', $first));
 })->with([['name', 'asc', 'Alpha'], ['name', 'desc', 'Zulu'], ['due_date', 'asc', 'Zulu'], ['created_at', 'desc', 'Zulu']]);
 
