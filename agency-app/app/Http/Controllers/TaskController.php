@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateTask;
+use App\Enums\Priority;
+use App\Enums\TaskStatus;
 use App\Http\Requests\StoreTaskRequest;
 use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
@@ -31,8 +33,8 @@ class TaskController extends Controller
 
         return Inertia::render('tasks/index', [
             'tasks' => $tasks,
-            'statuses' => Task::STATUSES,
-            'priorities' => Task::PRIORITIES,
+            'statuses' => TaskStatus::values(),
+            'priorities' => Priority::values(),
         ]);
     }
 

@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Priority;
+use App\Enums\ProjectStatus;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\User;
@@ -24,7 +26,7 @@ class ProjectSeeder extends Seeder
         }
         foreach (['Corporate Website Redesign', 'E-Commerce Store Development', 'Customer Relationship Management System', 'Mobile Application Development', 'Booking Platform Integration', 'Business Analytics Dashboard'] as $i => $name) {
             $client = $clients[$i % $clients->count()];
-            Project::firstOrCreate(['project_code' => 'DEMO-'.$client->id.'-'.($i + 1)], ['client_id' => $client->id, 'name' => $name, 'description' => 'Fictional portfolio demonstration project.', 'status' => Project::STATUSES[$i % 5], 'priority' => Project::PRIORITIES[$i % 4], 'start_date' => today()->subDays(20), 'due_date' => today()->addDays($i * 10 - 5), 'budget' => 4500 + $i * 2500, 'currency' => 'USD', 'progress' => $i % 5 === 3 ? 100 : $i * 12, 'completed_at' => $i % 5 === 3 ? now() : null]);
+            Project::firstOrCreate(['project_code' => 'DEMO-'.$client->id.'-'.($i + 1)], ['client_id' => $client->id, 'name' => $name, 'description' => 'Fictional portfolio demonstration project.', 'status' => ProjectStatus::values()[$i % 5], 'priority' => Priority::values()[$i % 4], 'start_date' => today()->subDays(20), 'due_date' => today()->addDays($i * 10 - 5), 'budget' => 4500 + $i * 2500, 'currency' => 'USD', 'progress' => $i % 5 === 3 ? 100 : $i * 12, 'completed_at' => $i % 5 === 3 ? now() : null]);
         }
     }
 }

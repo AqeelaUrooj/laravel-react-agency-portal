@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Priority;
+use App\Enums\ProjectStatus;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,14 +11,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property-read ProjectStatus $status
+ * @property-write ProjectStatus|string $status
+ * @property-read Priority $priority
+ * @property-write Priority|string $priority
+ */
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
-
-    public const STATUSES = ['planning', 'in_progress', 'on_hold', 'completed', 'cancelled'];
-
-    public const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
     public const CURRENCIES = ['USD', 'EUR', 'GBP', 'PKR', 'AED', 'CAD', 'AUD'];
 
@@ -24,7 +28,7 @@ class Project extends Model
 
     protected function casts(): array
     {
-        return ['start_date' => 'date:Y-m-d', 'due_date' => 'date:Y-m-d', 'completed_at' => 'datetime', 'budget' => 'decimal:2', 'progress' => 'integer'];
+        return ['status' => ProjectStatus::class, 'priority' => Priority::class, 'start_date' => 'date:Y-m-d', 'due_date' => 'date:Y-m-d', 'completed_at' => 'datetime', 'budget' => 'decimal:2', 'progress' => 'integer'];
     }
 
     /** @return BelongsTo<Client, $this> */
@@ -55,6 +59,6 @@ class Project extends Model
     {
         $query = static::query()->accessibleTo($user);
 
-        return ['total' => (clone $query)->count(), 'active' => (clone $query)->where('status', 'in_progress')->count(), 'completed' => (clone $query)->where('status', 'completed')->count(), 'overdue' => (clone $query)->whereNotIn('status', ['completed', 'cancelled'])->whereDate('due_date', '<', today())->count()];
+        return ['total' => (clone $query)->count(), 'active' => (clone $query)->where('status', ProjectStatus::InProgress->value)->count(), 'completed' => (clone $query)->where('status', ProjectStatus::Completed->value)->count(), 'overdue' => (clone $query)->whereNotIn('status', [ProjectStatus::Completed->value, ProjectStatus::Cancelled->value])->whereDate('due_date', '<', today())->count()];
     }
 }
