@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Priority;
+use App\Enums\ProjectStatus;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
@@ -20,7 +22,7 @@ class ProjectController extends Controller
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Project::class);
-        $filters = $request->validate(['search' => ['nullable', 'string', 'max:255'], 'status' => ['nullable', Rule::in(Project::STATUSES)], 'priority' => ['nullable', Rule::in(Project::PRIORITIES)], 'client_id' => ['nullable', 'integer', Rule::exists('clients', 'id')->where('user_id', $request->user()->id)], 'sort' => ['nullable', Rule::in(['created_at', 'due_date', 'name'])], 'direction' => ['nullable', Rule::in(['asc', 'desc'])], 'view' => ['nullable', Rule::in(['table', 'grid'])], 'page' => ['nullable', 'integer', 'min:1']]);
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:255'], 'status' => ['nullable', Rule::enum(ProjectStatus::class)], 'priority' => ['nullable', Rule::enum(Priority::class)], 'client_id' => ['nullable', 'integer', Rule::exists('clients', 'id')->where('user_id', $request->user()->id)], 'sort' => ['nullable', Rule::in(['created_at', 'due_date', 'name'])], 'direction' => ['nullable', Rule::in(['asc', 'desc'])], 'view' => ['nullable', Rule::in(['table', 'grid'])], 'page' => ['nullable', 'integer', 'min:1']]);
         $query = Project::query()->accessibleTo($request->user())->with('client:id,name');
         if ($search = $filters['search'] ?? null) {
             $query->where(function ($query) use ($search): void {
@@ -39,7 +41,7 @@ class ProjectController extends Controller
     /** @return array{clients: Collection<int, Client>, statuses: list<string>, priorities: list<string>, currencies: list<string>} */
     private function options(Request $request): array
     {
-        return ['clients' => $request->user()->clients()->orderBy('name')->get(['id', 'name']), 'statuses' => Project::STATUSES, 'priorities' => Project::PRIORITIES, 'currencies' => Project::CURRENCIES];
+        return ['clients' => $request->user()->clients()->orderBy('name')->get(['id', 'name']), 'statuses' => ProjectStatus::values(), 'priorities' => Priority::values(), 'currencies' => Project::CURRENCIES];
     }
 
     public function create(Request $request): Response
@@ -55,7 +57,7 @@ class ProjectController extends Controller
         $data = $request->validated();
         $data['project_code'] = $data['project_code'] ?? 'PRJ-'.Str::upper((string) Str::ulid());
         $project = new Project($data);
-        $project->completed_at = $data['status'] === 'completed' ? now() : null;
+        $project->completed_at = $project->status === ProjectStatus::Completed ? now() : null;
         $project->save();
 
         return to_route('projects.show', $project)->with('success', 'Project created successfully.');
@@ -80,7 +82,7 @@ class ProjectController extends Controller
         $data = $request->validated();
         $data['project_code'] = $data['project_code'] ?? $project->project_code;
         $project->fill($data);
-        $project->completed_at = $data['status'] === 'completed' ? ($project->completed_at ?? now()) : null;
+        $project->completed_at = $project->status === ProjectStatus::Completed ? ($project->completed_at ?? now()) : null;
         $project->save();
 
         return to_route('projects.show', $project)->with('success', 'Project updated successfully.');

@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Priority;
+use App\Enums\TaskStatus;
 use App\Models\Project;
-use App\Models\Task;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\Exists;
-use Illuminate\Validation\Rules\In;
 
 class StoreTaskRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class StoreTaskRequest extends FormRequest
         return $this->user() !== null;
     }
 
-    /** @return array<string, list<string|Exists|In>> */
+    /** @return array<string, list<string|Exists|Enum>> */
     public function rules(): array
     {
         return [
@@ -44,12 +45,12 @@ class StoreTaskRequest extends FormRequest
 
             'status' => [
                 'required',
-                Rule::in(Task::STATUSES),
+                Rule::enum(TaskStatus::class),
             ],
 
             'priority' => [
                 'required',
-                Rule::in(Task::PRIORITIES),
+                Rule::enum(Priority::class),
             ],
 
             'due_date' => [
